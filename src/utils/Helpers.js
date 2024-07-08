@@ -1,3 +1,6 @@
+import {useCallback} from "react";
+import {basicAuth} from "./Headers";
+
 export const generateRandomString = length => {
   const characters =
     '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%&()_+|}{[]:?></-=';
@@ -20,4 +23,24 @@ export const formatDate = (date) => {
   const minutes = ('0' + date.getMinutes()).slice(-2);
 
   return `${day}.${month}.${year} ${hours}:${minutes}`;
+};
+
+export const findProductByBarcode = (productsList, barcode) => {
+  return productsList.find(item =>
+      barcode.includes(item["Штрихкод"]) && barcode.includes(item["Партия"])
+  );
+};
+
+export const sendGetRequestWithTextResponse = async (url) => {
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: basicAuth,
+      },
+    });
+    return response.ok ? response.text() : "Нет";
+  } catch (e) {
+    return "Нет";
+  }
 };

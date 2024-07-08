@@ -1,66 +1,20 @@
 import {useSharedValue} from "react-native-reanimated";
 import * as React from "react";
-import {useCallback, useEffect, useRef, useState} from "react";
-import {Alert, StyleSheet, Text, TextInput, TouchableOpacity, View,} from "react-native";
+import {useEffect, useState} from "react";
+import {Alert, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
 import {Camera, useCameraDevice, useCameraPermission, useCodeScanner,} from "react-native-vision-camera";
 import Icon from "react-native-vector-icons/FontAwesome5";
-import AdditionalIcons from "react-native-vector-icons/AntDesign";
-import {BASE_URL, commonStyles} from "../../variables/Variables";
-import {basicAuth} from "../../utils/Headers";
+import {commonStyles} from "../../variables/Variables";
 import {MotiView, useAnimationState} from "moti";
+import {sendGetRequestWithTextResponse} from "../../utils/Helpers";
 
 const DEFAULT_BORDER_RADIUS = 15;
 
 const ProductScannerScreen = ({navigation, route}) => {
 
-    const sendTypicalGetRequest = useCallback(async (addedString) => {
-        try {
-            const response = await fetch(BASE_URL + addedString, {
-                method: "GET",
-                headers: {
-                    Authorization: basicAuth,
-                },
-            });
-            if (response.ok) {
-                return response.text();
-            }
-        } catch (e) {
-            console.log(e);
-        }
-    }, []);
-
     const {productsList} = route.params;
 
-    const textInputRef = useRef(null);
-
     const [product, setProduct] = useState("");
-
-    const [showTextInput, setShowTextInput] = useState(false);
-    const [inputText, onChangeInputText] = useState("");
-
-    const changeShowTextInput = () => {
-        setShowTextInput(isShowed => {
-            barcodeScanned.value = !isShowed;
-            return !isShowed;
-        })
-    }
-
-    const onSubmitEditingInputText = () => {
-        if (product) {
-            //console.log(inputText);
-            processShelvingBarCode(inputText);
-            textInputRef.current.clear();
-        } else {
-            //console.log(`]C1${inputText}`);
-            if (!findObjectByBarcodeSubstring(`]C1${inputText}`)) {
-                Alert.alert("Внимание", "Отсканированный товар отсутствует в выбранной накладной.")
-                return;
-            }
-
-            processProductBarCode(`]C1${inputText}`);
-            textInputRef.current.clear();
-        }
-    }
 
     const findObjectByBarcodeSubstring = (targetSubstring) => {
         for (const item of productsList) {
@@ -73,7 +27,7 @@ const ProductScannerScreen = ({navigation, route}) => {
 
     const validateShelvingString = (input) => {
 
-        const regex = /^[a-zA-Z]-\d{1,2}-\d{1,2}$/;
+        const regex = /^[A-Z]\d-\d-\d$/;
 
         return regex.test(input);
     };
@@ -86,18 +40,12 @@ const ProductScannerScreen = ({navigation, route}) => {
             [
                 {
                     text: "Отмена",
-                    onPress: () => {
-                        if (!showTextInput) {
-                            barcodeScanned.value = false;
-                        }
-                    },
+                    onPress: () => barcodeScanned.value = false,
                 },
                 {
                     text: "Продолжить",
                     onPress: () => {
-                        if (!showTextInput) {
-                            barcodeScanned.value = false;
-                        }
+                        barcodeScanned.value = false;
                         if (targetProduct) {
                             setProduct({...targetProduct, "ОтсканированныйШтрихкод": code});
                         }
@@ -120,11 +68,11 @@ const ProductScannerScreen = ({navigation, route}) => {
                     onPress: () => {
                         const numberParty = product["ОтсканированныйШтрихкод"].substring(20, 29);
                         // console.log(`${BASE_URL}ControlCell?barcode=${code}`);
-                        sendTypicalGetRequest(`ControlCell?barcode=${code}`).then(controlCellRes => {
+                        sendGetRequestWithTextResponse(`ControlCell?barcode=${code}`).then(controlCellRes => {
                                 // console.log(controlCellRes);
                                 if (controlCellRes === "Да") {
                                     // console.log(`${BASE_URL}PutProductByCell?NumberParty=${numberParty}&Barcode=${code}`);
-                                    sendTypicalGetRequest(`PutProductByCell?NumberParty=${numberParty}&Barcode=${code}`)
+                                    sendGetRequestWithTextResponse(`PutProductByCell?NumberParty=${numberParty}&Barcode=${code}`)
                                         .then(putProductByCellRes => {
                                                 //console.log(`Ответ после попытки положить товар в ячейку: ${putProductByCellRes}`);
                                                 if (putProductByCellRes === "Да") {
@@ -139,17 +87,12 @@ const ProductScannerScreen = ({navigation, route}) => {
                                             },
                                         );
                                 } else {
-
                                     Alert.alert(
                                         "Внимание",
                                         "Эта ячейка не подходит, выберите другую.",
                                         [{
                                             text: "Ок",
-                                            onPress: () => {
-                                                if (!showTextInput) {
-                                                    barcodeScanned.value = false;
-                                                }
-                                            },
+                                            onPress: () => barcodeScanned.value = false,
                                         }]
                                     )
                                 }
@@ -249,7 +192,7 @@ const ProductScannerScreen = ({navigation, route}) => {
                 style={styles.productLabel}
             >
                 <View style={{flex: 1}}>
-                    <Text style={styles.productTitleText}>{product["НаименованиеТовара"]}</Text>
+                    <Text style={commonStyles.titleText}>{product["НаименованиеТовара"]}</Text>
                     <Text style={styles.productDescText}>Количество: {product["Количество"]} шт.</Text>
                 </View>
                 <View style={{justifyContent: "center", paddingLeft: 10}}>
@@ -261,26 +204,6 @@ const ProductScannerScreen = ({navigation, route}) => {
                     </TouchableOpacity>
                 </View>
             </MotiView>
-            {/*<View style={styles.inputRow}>*/}
-            {/*    {showTextInput ? <View style={styles.inputLabel}>*/}
-            {/*        <TextInput*/}
-            {/*            style={styles.inputField}*/}
-            {/*            ref={textInputRef}*/}
-            {/*            onChangeText={onChangeInputText}*/}
-            {/*            onSubmitEditing={onSubmitEditingInputText}*/}
-            {/*            placeholder="Штрихкод"*/}
-            {/*            //showSoftInputOnFocus={false}*/}
-            {/*            keyboardType={product ? "default" : "numeric"}*/}
-            {/*        />*/}
-            {/*    </View> : null}*/}
-
-            {/*    <TouchableOpacity*/}
-            {/*        style={{padding: 4, backgroundColor: 'rgba(100, 100, 100, 0.7)', borderRadius: 8}}*/}
-            {/*        onPress={changeShowTextInput}*/}
-            {/*    >*/}
-            {/*        <AdditionalIcons name="edit" size={40} color="black"/>*/}
-            {/*    </TouchableOpacity>*/}
-            {/*</View>*/}
         </>
     );
 };
@@ -291,11 +214,6 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: "#00457e",
-    },
-    barcodeText: {
-        fontSize: 20,
-        color: "white",
-        fontWeight: "bold",
     },
     productLabel: {
         position: "absolute",
@@ -308,43 +226,9 @@ const styles = StyleSheet.create({
         borderRadius: DEFAULT_BORDER_RADIUS,
         elevation: 7,
     },
-    productTitleText: {
-        color: "black",
-        fontSize: 20,
-        fontWeight: "bold",
-    },
     productDescText: {
         color: "black",
         fontSize: 18,
-    },
-    inputRow: {
-        position: "absolute",
-        flexDirection: "row",
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        //backgroundColor: 'red',
-        height: '10%',
-        width: "93%",
-        top: "25%",
-        left: "5%",
-    },
-    inputLabel: {
-        flex: 1,
-        marginRight: "1%",
-        //width: "93.75%",
-        backgroundColor: 'rgba(255, 255, 255, 1)',
-        padding: "3%",
-        paddingHorizontal: "6%",
-        borderRadius: DEFAULT_BORDER_RADIUS,
-        elevation: 7,
-    },
-    inputField: {
-        alignSelf: 'stretch',
-        color: "black",
-        fontSize: 25,
-        borderBottomWidth: 1,
-        borderBottomColor: "black",
-        padding: 0,
     },
     buttonContainer: {
         padding: 10,

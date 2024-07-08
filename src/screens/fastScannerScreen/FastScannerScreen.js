@@ -1,35 +1,106 @@
-import * as React from "react";
-import {useCallback, useEffect, useRef, useState} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Alert, FlatList, StyleSheet, TextInput, View} from "react-native";
 import ScannedItem from "./ScannedItem";
-import {generateRandomString} from "../../utils/Helpers";
+import {findProductByBarcode, generateRandomString, sendGetRequestWithTextResponse} from "../../utils/Helpers";
 import {BASE_URL} from "../../variables/Variables";
-import {basicAuth} from "../../utils/Headers";
 
 const FastScannerScreen = ({navigation, route}) => {
-
-    const sendTypicalGetRequest = useCallback(async (addedString) => {
-        try {
-            const response = await fetch(BASE_URL + addedString, {
-                method: "GET",
-                headers: {
-                    Authorization: basicAuth,
-                },
-            });
-            if (response.ok) {
-                return response.text();
-            }
-        } catch (e) {
-            console.log(e);
-        }
-    }, []);
-
     const {productsList, processScannedList} = route.params;
 
     const textInputRef = useRef(null);
+    const [inputText, setInputText] = useState("");
+    const [scannedList, setScannedList] = useState([]);
 
-    const [inputText, onChangeInputText] = useState("");
-    const [scannedList, setScannedList] = useState([])
+    const handleItemScan = (item) => {
+        const newItem = {
+            id: generateRandomString(16),
+            itemBarCode: item["Штрихкод"],
+            itemPartNumber: item["Партия"],
+            itemName: item["НаименованиеТовара"],
+            cellBarCode: "",
+            status: ""
+        };
+        const listLength = scannedList.length;
+        if (!listLength || scannedList[listLength - 1]?.cellBarCode) {
+            setScannedList(prev => [...prev, newItem]);
+        } else {
+            setScannedList(prev => {
+                prev[listLength - 1] = newItem; //меняем последний сохранённый штрихкод товара
+                return [...prev];
+            });
+        }
+        handleTextInputState()
+    };
+
+    const updateScannedItemCellBarcode = (barcode) => {
+        setScannedList(prev => {
+            const updatedList = [...prev];
+            updatedList[updatedList.length - 1] = {
+                ...updatedList[updatedList.length - 1],
+                cellBarCode: barcode
+            };
+            return updatedList;
+        });
+    };
+
+    const updateScannedItemStatus = (partNumber, barcode, status) => {
+        setScannedList(prev => prev.map(item =>
+            item.itemPartNumber === partNumber && item.cellBarCode === barcode ?
+                {...item, status: status}
+                : item
+        ))
+    };
+
+    const handleBarcodeScan = async (barcode) => {
+        updateScannedItemCellBarcode(barcode)
+        handleTextInputState()
+        let serverRes = await sendGetRequestWithTextResponse(`${BASE_URL}ControlCell?barcode=${barcode}`);
+        const partNumber = scannedList[scannedList.length - 1].itemPartNumber;
+        if (serverRes === "Да") {
+            serverRes = await sendGetRequestWithTextResponse(`${BASE_URL}PutProductByCell?NumberParty=${partNumber}&Barcode=${barcode}`);
+        }
+        updateScannedItemStatus(partNumber, barcode, serverRes === "Да" ? "Успех" : "Неудача");
+    };
+
+    const handleTextInputState = () => {
+        textInputRef.current.clear();
+        setTimeout(() => textInputRef.current.focus(), 0)
+    };
+
+    const handleWarning = (msg, callBack) => {
+        Alert.alert("Внимание", msg, [{
+            text: "Понятно",
+            onPress: callBack
+        }]);
+    }
+
+    const handleInputSubmit = () => {
+        if (inputText.length > 10) {
+            const product = findProductByBarcode(productsList, inputText);
+            if (product) {
+                handleItemScan(product);
+            } else {
+                return handleWarning("Отсканированный товар отсутствует в выбранной накладной.", handleTextInputState);
+            }
+        } else {
+            if (!scannedList.length || scannedList[scannedList.length - 1]?.cellBarCode) {
+                return handleWarning("Сначала отсканируйте штрихкод товара.", handleTextInputState);
+            } else {
+                return handleBarcodeScan(inputText);
+            }
+        }
+    };
+
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', () => {
+            processScannedList(scannedList);
+        });
+        return unsubscribe;
+    }, [navigation, scannedList]);
+
+    useEffect(() => {
+        textInputRef.current.focus();
+    }, []);
 
     const renderScannedItem = useCallback(({item, index}) => {
         return (
@@ -37,164 +108,16 @@ const FastScannerScreen = ({navigation, route}) => {
         );
     }, []);
 
-    const findObjectByBarcodeSubstring = (targetSubstring) => {
-        for (const item of productsList) {
-            if (targetSubstring.includes(item["Штрихкод"]) && targetSubstring.includes(item["Партия"])) {
-                return item;
-            }
-        }
-        return false;
-    };
-
-    const onSubmitEditingInputText = () => {
-
-        const length = scannedList.length
-
-        if (inputText.length > 10) {
-
-            const item = findObjectByBarcodeSubstring(inputText)
-
-            if (!item) { // обработать сканирование несуществующего товара
-                Alert.alert(
-                    "Внимание",
-                    "Отсканированный товар отсутствует в выбранной накладной.",
-                    [{
-                        text: "Понятно",
-                        onPress: () => {
-                            textInputRef.current.clear();
-                            setTimeout(() => {
-                                textInputRef.current.focus();
-                            }, 0);
-                        },
-                    }]
-                )
-                return;
-            }
-
-            const barCode = item["Штрихкод"]
-            const partNumber = item["Партия"]
-            const name = item["НаименованиеТовара"]
-
-            if (length && scannedList[length - 1].cellBarCode) {
-                setScannedList(prev => [
-                    ...prev,
-                    {
-                        id: generateRandomString(16),
-                        itemBarCode: barCode,
-                        itemPartNumber: partNumber,
-                        itemName: name,
-                        cellBarCode: "",
-                        status: ""
-                    }
-                ])
-            } else if (length) {
-                setScannedList(prev => {
-                    const newArray = [...prev];
-                    newArray[length - 1] = {
-                        ...newArray[length - 1],
-                        ['itemBarCode']: barCode,
-                        ['itemPartNumber']: partNumber,
-                        ['itemName']: name,
-                    };
-                    return newArray;
-                });
-            } else {
-                setScannedList([{
-                    id: generateRandomString(16),
-                    itemBarCode: barCode,
-                    itemPartNumber: partNumber,
-                    itemName: name,
-                    cellBarCode: "",
-                    status: ""
-                }])
-            }
-        } else {
-            if (length && scannedList[length - 1].cellBarCode || !length) {
-                Alert.alert(
-                    "Внимание",
-                    "Сначала отсканируйте штрихкод товара.",
-                    [{
-                        text: "Понятно",
-                        onPress: () => {
-                            textInputRef.current.clear();
-                            setTimeout(() => {
-                                textInputRef.current.focus();
-                            }, 0);
-                        },
-                    }])
-                return;
-            } else {
-                const cellBarCode = inputText
-                const partNumber = scannedList[length - 1]['itemPartNumber']
-
-                setScannedList(prev => {
-                    const newArray = [...prev];
-                    newArray[length - 1] = {
-                        ...newArray[length - 1],
-                        ['cellBarCode']: cellBarCode,
-                    };
-                    return newArray;
-                });
-
-                //дальше отправляем всё на сервер
-                sendTypicalGetRequest(`ControlCell?barcode=${cellBarCode}`).then(controlCellRes => {
-                        if (controlCellRes === "Да") {
-                            sendTypicalGetRequest(`PutProductByCell?NumberParty=${partNumber}&Barcode=${cellBarCode}`)
-                                .then(putProductByCellRes => {
-                                        setScannedList(prev => {
-                                            const newArray = [...prev];
-                                            newArray[length - 1] = {
-                                                ...newArray[length - 1],
-                                                ['status']: putProductByCellRes === "Да" ? "Успех" : "Неудача",
-                                            };
-                                            return newArray;
-                                        });
-                                    },
-                                );
-                        } else {
-                            setScannedList(prev => {
-                                const newArray = [...prev];
-                                newArray[length - 1] = {
-                                    ...newArray[length - 1],
-                                    ['status']: "Неудача",
-                                };
-                                return newArray;
-                            });
-                        }
-                    },
-                );
-            }
-        }
-
-        textInputRef.current.clear();
-        setTimeout(() => {
-            textInputRef.current.focus();
-        }, 0);
-    }
-
-    useEffect(
-        () =>
-            navigation.addListener('beforeRemove', (e) => {
-                processScannedList(scannedList)
-            }),
-        [navigation, scannedList]
-    );
-
-    useEffect(
-        () => {
-            textInputRef.current.focus();
-        }, []
-    );
-
     return (
         <View style={styles.container}>
             <TextInput
                 style={styles.inputField}
                 ref={textInputRef}
-                onChangeText={onChangeInputText}
-                onSubmitEditing={onSubmitEditingInputText}
+                value={inputText}
+                onChangeText={setInputText}
+                onSubmitEditing={handleInputSubmit}
                 placeholder="Штрихкод"
-                showSoftInputOnFocus={false}
+                //showSoftInputOnFocus={false}
             />
             <FlatList
                 contentContainerStyle={{flexGrow: 1}}
@@ -203,7 +126,6 @@ const FastScannerScreen = ({navigation, route}) => {
                 keyExtractor={item => item.id}
             />
         </View>
-
     );
 };
 
