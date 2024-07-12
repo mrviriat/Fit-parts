@@ -93,7 +93,7 @@ const FastScannerScreen = ({navigation, route}) => {
 
     useEffect(() => {
         const unsubscribe = navigation.addListener('beforeRemove', () => {
-            processScannedList(scannedList);
+            processScannedList();
         });
         return unsubscribe;
     }, [navigation, scannedList]);

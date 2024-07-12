@@ -32,7 +32,7 @@ const App = () => {
                 <Stack.Screen
                     name="ProductsScreen"
                     component={ProductsScreen}
-                    options={({navigation}) => ({
+                    options={() => ({
                         title: "Товары",
                         headerRight: () => <CustomButton title={"СКАНЕР"}/>
                     })}

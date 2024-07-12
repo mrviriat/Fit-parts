@@ -100,7 +100,7 @@ const ProductsScreen = ({navigation, route}) => {
         });
     }, [sendTypicalGetRequest]);
 
-    const processScannedList = (scannedList) => {
+    const processScannedList = () => {
 
         setProductsList([])
         const {Date, Number} = route.params;
