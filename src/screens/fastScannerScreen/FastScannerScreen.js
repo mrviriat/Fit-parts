@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Alert, FlatList, StyleSheet, TextInput, View} from "react-native";
 import ScannedItem from "./ScannedItem";
 import {findProductByBarcode, generateRandomString, sendGetRequestWithTextResponse} from "../../utils/Helpers";
-import {BASE_URL} from "../../variables/Variables";
+import {BASE_URL, DEFAULT_MARGIN, INPUT_FONT_SIZE} from "../../variables/Variables";
 
 const FastScannerScreen = ({navigation, route}) => {
     const {productsList, processScannedList} = route.params;
@@ -117,7 +117,7 @@ const FastScannerScreen = ({navigation, route}) => {
                 onChangeText={setInputText}
                 onSubmitEditing={handleInputSubmit}
                 placeholder="Штрихкод"
-                //showSoftInputOnFocus={false}
+                showSoftInputOnFocus={false}
             />
             <FlatList
                 contentContainerStyle={{flexGrow: 1}}
@@ -134,10 +134,10 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     inputField: {
-        margin: 15,
+        margin: DEFAULT_MARGIN,
         alignSelf: 'stretch',
         color: "black",
-        fontSize: 25,
+        fontSize: INPUT_FONT_SIZE,
         borderBottomWidth: 1,
         borderBottomColor: "black",
         padding: 0,

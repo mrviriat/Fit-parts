@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {memo} from 'react';
-import {StyleSheet, View, Text} from "react-native";
+import {StyleSheet, Text, View} from "react-native";
 import {commonStyles} from "../../variables/Variables";
 
 const ScannedItem = memo(({item, index}) => {
 
     return (
-        <View style={[styles.listItemContainer, { marginTop: index === 0 && 15 }]}>
+        <View style={[styles.listItemContainer, {marginTop: index === 0 && 15}]}>
             <Text style={commonStyles.titleText}>Товар</Text>
             <View style={{marginLeft: 15}}>
                 <Text style={commonStyles.blackDescText}>Наименование: {item.itemName}</Text>

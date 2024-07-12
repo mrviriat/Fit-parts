@@ -4,11 +4,16 @@ import {useEffect, useState} from "react";
 import {Alert, StyleSheet, Text, TouchableOpacity, View,} from "react-native";
 import {Camera, useCameraDevice, useCameraPermission, useCodeScanner,} from "react-native-vision-camera";
 import Icon from "react-native-vector-icons/FontAwesome5";
-import {commonStyles} from "../../variables/Variables";
+import {
+    BASE_URL,
+    commonStyles,
+    DEFAULT_BORDER_RADIUS,
+    DEFAULT_PADDING,
+    ITEM_BLUE,
+    SPECIFIC_FONT_SIZE
+} from "../../variables/Variables";
 import {MotiView, useAnimationState} from "moti";
 import {sendGetRequestWithTextResponse} from "../../utils/Helpers";
-
-const DEFAULT_BORDER_RADIUS = 15;
 
 const ProductScannerScreen = ({navigation, route}) => {
 
@@ -68,13 +73,12 @@ const ProductScannerScreen = ({navigation, route}) => {
                     onPress: () => {
                         const numberParty = product["ОтсканированныйШтрихкод"].substring(20, 29);
                         // console.log(`${BASE_URL}ControlCell?barcode=${code}`);
-                        sendGetRequestWithTextResponse(`ControlCell?barcode=${code}`).then(controlCellRes => {
+                        sendGetRequestWithTextResponse(`${BASE_URL}ControlCell?barcode=${code}`).then(controlCellRes => {
                                 // console.log(controlCellRes);
                                 if (controlCellRes === "Да") {
-                                    // console.log(`${BASE_URL}PutProductByCell?NumberParty=${numberParty}&Barcode=${code}`);
-                                    sendGetRequestWithTextResponse(`PutProductByCell?NumberParty=${numberParty}&Barcode=${code}`)
+                                    sendGetRequestWithTextResponse(`${BASE_URL}PutProductByCell?NumberParty=${numberParty}&Barcode=${code}`)
                                         .then(putProductByCellRes => {
-                                                //console.log(`Ответ после попытки положить товар в ячейку: ${putProductByCellRes}`);
+                                                // console.log(`Ответ после попытки положить товар в ячейку: ${putProductByCellRes}`);
                                                 if (putProductByCellRes === "Да") {
                                                     navigation.navigate({
                                                         name: "ProductsScreen",
@@ -116,7 +120,7 @@ const ProductScannerScreen = ({navigation, route}) => {
                 return;
             }
 
-            console.log(codes[0]);
+            // console.log(codes[0]);
             if (product) {
 
                 if (!validateShelvingString(codes[0].value)) {
@@ -213,13 +217,13 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#00457e",
+        backgroundColor: ITEM_BLUE,
     },
     productLabel: {
         position: "absolute",
         flexDirection: "row",
         backgroundColor: "white",
-        padding: 10,
+        padding: DEFAULT_PADDING,
         width: "90%",
         top: "5%",
         left: "5%",
@@ -228,10 +232,10 @@ const styles = StyleSheet.create({
     },
     productDescText: {
         color: "black",
-        fontSize: 18,
+        fontSize: SPECIFIC_FONT_SIZE,
     },
     buttonContainer: {
-        padding: 10,
+        padding: DEFAULT_PADDING,
         backgroundColor: 'rgba(100, 100, 100, 0.7)',
         borderRadius: DEFAULT_BORDER_RADIUS,
     },

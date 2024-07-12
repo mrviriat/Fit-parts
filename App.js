@@ -1,5 +1,5 @@
 import * as React from "react";
-import {View, Button, StatusBar, Alert} from "react-native";
+import {StatusBar} from "react-native";
 import {NavigationContainer} from "@react-navigation/native";
 import {createNativeStackNavigator} from "@react-navigation/native-stack";
 import HomeScreen from "./src/screens/homeScreen/HomeScreen";
@@ -9,6 +9,7 @@ import ProductScannerScreen from "./src/screens/productScannerScreen/ProductScan
 import "react-native-reanimated";
 import "react-native-gesture-handler";
 import FastScannerScreen from "./src/screens/fastScannerScreen/FastScannerScreen";
+import CustomButton from "./src/utils/CustomButton";
 
 const Stack = createNativeStackNavigator();
 
@@ -26,14 +27,16 @@ const App = () => {
                     options={{
                         title: "Накладные",
                         headerRight: () =>
-                            <Button title="Обновить"/>,
+                            <CustomButton title={"ОБНОВИТЬ"}/>
+                        // <Button title="Обновить"/>,
                     }}/>
                 <Stack.Screen
                     name="ProductsScreen"
                     component={ProductsScreen}
                     options={({navigation}) => ({
                         title: "Товары",
-                        headerRight: () => <Button title="Сканер"/>
+                        headerRight: () => <CustomButton title={"СКАНЕР"}/>
+                        // <Button title="Сканер"/>
                     })}
                 />
                 <Stack.Screen
