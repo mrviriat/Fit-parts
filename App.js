@@ -28,7 +28,6 @@ const App = () => {
                         title: "Накладные",
                         headerRight: () =>
                             <CustomButton title={"ОБНОВИТЬ"}/>
-                        // <Button title="Обновить"/>,
                     }}/>
                 <Stack.Screen
                     name="ProductsScreen"
@@ -36,7 +35,6 @@ const App = () => {
                     options={({navigation}) => ({
                         title: "Товары",
                         headerRight: () => <CustomButton title={"СКАНЕР"}/>
-                        // <Button title="Сканер"/>
                     })}
                 />
                 <Stack.Screen

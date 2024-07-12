@@ -50,9 +50,6 @@ const HomeScreen = ({navigation, route}) => {
         navigation.setOptions({
             headerRight: () => (
                 <CustomButton title={"ОБНОВИТЬ"} onPress={updateInvoices}/>
-                // <Button
-                //   onPress={updateInvoices}
-                //   title="Обновить" />
             ),
         });
     }, [navigation]);
@@ -64,11 +61,10 @@ const HomeScreen = ({navigation, route}) => {
     }, []);
 
     useEffect(() => {
-        // console.log("в хуке с получением накладных");
         if (invoicesList.length) {
             return;
         }
-        // console.log("отправляю запрос на получение накладных");
+
         sendTypicalGetRequest("TTN").then(response => {
             if (response.length) {
                 setInvoicesList(response.map(item => {
@@ -78,7 +74,6 @@ const HomeScreen = ({navigation, route}) => {
                     };
                 }));
             } else {
-                // console.log("я тут");
                 setIsList(false);
             }
         });

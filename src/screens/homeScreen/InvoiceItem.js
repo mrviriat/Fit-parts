@@ -24,11 +24,11 @@ const InvoiceItem = memo(({item, index}) => {
             style={[commonStyles.listItemContainer, {marginTop: index === 0 ? DEFAULT_MARGIN : DEFAULT_PADDING}]}
             onPress={goToInvoiceItemDetails}
         >
-            {item['Принята'] &&
+            {item['Принята'] ?
                 <>
                     <Text style={styles.titleText}>Накладная принята</Text>
                     <View style={styles.separator}/>
-                </>
+                </> : null
             }
             <Text style={commonStyles.descText}>Дата: {formatDate(new Date(item['Дата']))}</Text>
             <Text style={commonStyles.descText}>Контрагент: {item['Контрагент']}</Text>

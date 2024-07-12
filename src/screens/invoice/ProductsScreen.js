@@ -1,7 +1,7 @@
 import * as React from "react";
 import {useCallback, useEffect, useState} from "react";
 import {Alert, FlatList, StyleSheet, View} from "react-native";
-import {generateRandomString} from "../../utils/Helpers";
+import {generateRandomString, sendGetRequestWithTextResponse} from "../../utils/Helpers";
 import {BASE_URL} from "../../variables/Variables";
 import {basicAuth} from "../../utils/Headers";
 import ProductItem from "./ProductItem";
@@ -25,27 +25,9 @@ const ProductsScreen = ({navigation, route}) => {
         }
     }, []);
 
-    const sendTypicalGetRequestWithText = useCallback(async (addedString) => {
-        try {
-            const response = await fetch(BASE_URL + addedString, {
-                method: "GET",
-                headers: {
-                    Authorization: basicAuth,
-                },
-            });
-            if (response.ok) {
-                return response.text();
-            }
-        } catch (e) {
-            console.log(e);
-        }
-    }, []);
-
     const [productsList, setProductsList] = useState([]);
 
     const addShelvingNumberToProduct = (productBarCode, shelvingNumber) => {
-        // console.log(productBarCode);
-        // console.log(shelvingNumber);
         setProductsList((prevList) => {
             return prevList.map((product) => {
                 if (productBarCode === product["Штрихкод"]) {
@@ -59,8 +41,7 @@ const ProductsScreen = ({navigation, route}) => {
 
     const endEditing = () => {
         const {Date, Number} = route.params;
-        sendTypicalGetRequestWithText(`TTNFinish?Date=${Date}&Number=${Number}`).then(res => {
-            console.log(res);
+        sendGetRequestWithTextResponse(`${BASE_URL}TTNFinish?Date=${Date}&Number=${Number}`).then(res => {
             if (res === "Да") {
                 navigation.navigate({
                     name: 'Home',
@@ -102,25 +83,6 @@ const ProductsScreen = ({navigation, route}) => {
                                 },
                             ]
                         )}/>
-            // <Button
-            //     onPress={() =>
-            //         Alert.alert(
-            //             "Внимание",
-            //             "Выберите желаемый способ сканирования.",
-            //             [
-            //                 {
-            //                     text: "Камера устройства",
-            //                     onPress: () => navigation.navigate("ProductScannerScreen", {productsList}),
-            //                 },
-            //                 {
-            //                     text: "Внешний сканер",
-            //                     onPress: () => navigation.navigate("FastScannerScreen", {productsList, processScannedList}),
-            //                 },
-            //             ]
-            //         )
-            //
-            //     }
-            //     title="Сканер"/>
         });
     }, [navigation, productsList]);
 
@@ -168,12 +130,6 @@ const ProductsScreen = ({navigation, route}) => {
                 renderItem={renderProductItem}
                 keyExtractor={item => item.id}
             />
-            {/*<TouchableOpacity*/}
-            {/*    style={styles.submitButton}*/}
-            {/*    onPress={endEditing}*/}
-            {/*>*/}
-            {/*    <Text style={styles.buttonText}>ЗАКОНЧИТЬ</Text>*/}
-            {/*</TouchableOpacity>*/}
             <CustomButton title={"ЗАКОНЧИТЬ"} onPress={endEditing} absolute={true}/>
         </View>
     );
@@ -183,19 +139,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    // submitButton: {
-    //     position: "absolute",
-    //     padding: 10,
-    //     backgroundColor: "#2296f3",
-    //     bottom: 15,
-    //     right: 10,
-    //     borderRadius: 2,
-    // },
-    // buttonText: {
-    //     color: "white",
-    //     fontSize: 16,
-    //     fontWeight: '600',
-    // },
 });
 
 export default ProductsScreen;
