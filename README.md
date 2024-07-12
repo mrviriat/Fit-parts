@@ -53,4 +53,3 @@ Then
 ```
 
 Your apk located at _root_/android/app/build/outputs/apk/release
-```
